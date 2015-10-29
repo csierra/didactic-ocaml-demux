@@ -5,7 +5,7 @@ let line_stream_from_channel channel =
     Stream.from (
       (fun _ ->
          try 
-          really_input channel bytes 188 0;
+          really_input channel bytes 0 188;
           Some (bytes)
          with End_of_file -> None));;
 
