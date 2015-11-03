@@ -18,7 +18,7 @@ let read_packet buffer ch =
   | Some () -> Some buffer
   | None -> None
 
-let line_stream_from_channel ch ~f =
+let read_packets ch ~f =
   let buffer = String.create 188 in
   let rec loop () =
     match read_packet buffer ch with
@@ -102,6 +102,6 @@ let parse_packet packet =
     | { _ } -> failwith "not a packet"
 
 let main =
-  let read_and_parse ch =
-    line_stream_from_channel ch ~f: parse_packet in
-  In_channel.with_file Sys.argv.(1) ~f: read_and_parse
+  let process ch =
+    read_packets ~f: parse_packet ch in
+  In_channel.with_file Sys.argv.(1) ~f: process
