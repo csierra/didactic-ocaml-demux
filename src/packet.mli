@@ -17,5 +17,5 @@ val read : reader -> t option
     [iter] on that reader will return not results. *)
 val iter : reader -> f: (t -> unit) -> unit
 
-(** Return the raw contents of a packet as a [String.t]. *)
-val to_string : t -> String.t
+(** Parse and dump a packet into stdout *)
+val parse : t -> unit
