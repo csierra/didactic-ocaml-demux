@@ -8,15 +8,16 @@ let sync_channel_in channel =
     | _ -> print_string "Skipping\n"; loop_channel channel in
   loop_channel channel
 
+let read_packet buffer ch =
+  sync_channel_in ch;
+  match In_channel.really_input ch buffer 1 187 with
+  | Some () -> Some buffer
+  | None -> None
+
 let line_stream_from_channel channel =
   let bytes = String.create 188 in
     bytes.[0] <- '\x47';
-    Stream.from (
-      (fun _ ->
-           sync_channel_in channel;
-           match In_channel.really_input channel bytes 1 187 with
-           | Some () -> Some bytes
-           | None -> None))
+    Stream.from (fun _ -> read_packet bytes channel)
 
 let print_table table =
   let module Char = Caml.Char in
