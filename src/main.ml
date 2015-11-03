@@ -5,26 +5,33 @@ let rewind ch n =
   let open Int64 in
   In_channel.seek ch (In_channel.pos ch - n)
 
-let sync_channel_in channel =
-  let rec loop_channel channel =
-    match In_channel.input_byte channel with
-    | Some 0x47 -> rewind channel (Int64.of_int 1)
-    | _ -> print_string "Skipping\n"; loop_channel channel in
-  loop_channel channel
+module Packet = struct
 
-let read_packet buffer ch =
-  sync_channel_in ch;
-  match In_channel.really_input ch buffer 0 188 with
-  | Some () -> Some buffer
-  | None -> None
+  type t = In_channel.t * String.t
 
-let read_packets ch ~f =
-  let buffer = String.create 188 in
-  let rec loop () =
-    match read_packet buffer ch with
-    | Some _ -> f buffer ; loop ()
-    | None -> () in
-  loop ()
+  let reader ch = (ch, String.create 188)
+
+  let sync (ch, buffer) =
+    let rec loop () =
+      match In_channel.input_byte ch with
+      | Some 0x47 -> rewind ch (Int64.of_int 1)
+      | _ -> print_string "Skipping\n"; loop () in
+    loop ()
+
+  let read ((ch, buffer) as reader) =
+    sync reader;
+    match In_channel.really_input ch buffer 0 188 with
+    | Some () -> Some buffer
+    | None -> None
+
+  let iter reader ~f =
+    let rec loop () =
+      match read reader with
+      | Some x -> f x ; loop ()
+      | None -> () in
+    loop ()
+
+end
 
 let print_table table =
   let module Char = Caml.Char in
@@ -103,5 +110,5 @@ let parse_packet packet =
 
 let main =
   let process ch =
-    read_packets ~f: parse_packet ch in
+    Packet.iter ~f: parse_packet (Packet.reader ch) in
   In_channel.with_file Sys.argv.(1) ~f: process
