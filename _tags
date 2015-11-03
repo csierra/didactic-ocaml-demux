@@ -1,0 +1,2 @@
+true: syntax(camlp4o), syntax(bitstring)
+true: package(bitstring), package(bitstring.syntax)
