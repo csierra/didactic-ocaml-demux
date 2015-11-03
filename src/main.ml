@@ -3,8 +3,8 @@ open Bitstring
 
 let sync_channel_in channel =
   let rec loop_channel channel =
-    match (input_byte channel) with
-     0x47 -> ()
+    match In_channel.input_byte channel with
+    | Some 0x47 -> ()
     | _ -> print_string "Skipping\n"; loop_channel channel in
   loop_channel channel
 
@@ -13,11 +13,10 @@ let line_stream_from_channel channel =
     bytes.[0] <- '\x47';
     Stream.from (
       (fun _ ->
-         try
            sync_channel_in channel;
-           really_input channel bytes 1 187;
-           Some (bytes)
-         with End_of_file -> None));;
+           match In_channel.really_input channel bytes 1 187 with
+           | Some () -> Some bytes
+           | None -> None))
 
 let print_table table =
   let module Char = Caml.Char in
@@ -45,7 +44,7 @@ let print_table table =
                   7           :  3;
                   pmt_pid     : 13
                 } ->
-                  print_string ("PMT " ^ string_of_int(program_num) ^ " IN PID: " ^ string_of_int(pmt_pid) ^ "\n");
+                  Printf.printf "PMT %d IN PID: %d\n" program_num pmt_pid;
                   consume_pat (Bitstring.dropbits 32 pat)
               | { 0xFF : 8} ->
                   print_string ("END PAT?\n");
@@ -95,11 +94,7 @@ let parse_packet packet =
     | { _ } -> failwith "not a packet"
 
 let main =
-  let ic = open_in_bin Sys.argv.(1) in
-    try
-      let stream = line_stream_from_channel ic in
-        Stream.iter parse_packet stream;
-        Caml.close_in ic;
-    with e ->
-      Caml.close_in ic;
-      raise e
+  let read_and_parse ch =
+    let stream = line_stream_from_channel ch in
+    Stream.iter parse_packet stream in
+  In_channel.with_file Sys.argv.(1) ~f: read_and_parse
