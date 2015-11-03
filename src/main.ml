@@ -14,10 +14,14 @@ let read_packet buffer ch =
   | Some () -> Some buffer
   | None -> None
 
-let line_stream_from_channel channel =
-  let bytes = String.create 188 in
-    bytes.[0] <- '\x47';
-    Stream.from (fun _ -> read_packet bytes channel)
+let line_stream_from_channel ch ~f =
+  let buffer = String.create 188 in
+  buffer.[0] <- '\x47';
+  let rec loop () =
+    match read_packet buffer ch with
+    | Some _ -> f buffer ; loop ()
+    | None -> () in
+  loop ()
 
 let print_table table =
   let module Char = Caml.Char in
@@ -96,6 +100,5 @@ let parse_packet packet =
 
 let main =
   let read_and_parse ch =
-    let stream = line_stream_from_channel ch in
-    Stream.iter parse_packet stream in
+    line_stream_from_channel ch ~f: parse_packet in
   In_channel.with_file Sys.argv.(1) ~f: read_and_parse
