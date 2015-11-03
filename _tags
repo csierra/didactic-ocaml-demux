@@ -1,2 +1,12 @@
-true: syntax(camlp4o), syntax(bitstring)
-true: package(bitstring), package(bitstring.syntax)
+true: syntax(camlp4o, bitstring)
+true: package(
+        bin_prot.syntax,
+        bitstring,
+        bitstring.syntax,
+        comparelib.syntax,
+        core,
+        fieldslib.syntax,
+        sexplib.syntax,
+        variantslib.syntax
+      )
+true: thread, debug
