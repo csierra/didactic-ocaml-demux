@@ -1,3 +1,4 @@
+open Core.Std
 open Bitstring
 
 let sync_channel_in channel =
@@ -9,7 +10,7 @@ let sync_channel_in channel =
 
 let line_stream_from_channel channel =
   let bytes = String.create 188 in
-    bytes.[0] <- Char.chr(0x47);
+    bytes.[0] <- '\x47';
     Stream.from (
       (fun _ ->
          try
@@ -19,6 +20,7 @@ let line_stream_from_channel channel =
          with End_of_file -> None));;
 
 let print_table table =
+  let module Char = Caml.Char in
     bitmatch table with
     | {
         table_id                 :                  8;
@@ -57,6 +59,7 @@ let print_table table =
           in consume_pat table_data
 
 let print_pat pat =
+  let module Char = Caml.Char in
     bitmatch pat with
     | {
         pointer_field :8;
@@ -74,6 +77,7 @@ let print_packet = function
   | _ -> fun _ -> ()
 
 let parse_packet packet =
+  let module Char = Caml.Char in
   let bits = Bitstring.bitstring_of_string packet in
     bitmatch bits with
     | {
@@ -95,7 +99,7 @@ let main =
     try
       let stream = line_stream_from_channel ic in
         Stream.iter parse_packet stream;
-        close_in ic;
+        Caml.close_in ic;
     with e ->
-      close_in ic;
+      Caml.close_in ic;
       raise e
