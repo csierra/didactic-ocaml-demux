@@ -1,22 +1,25 @@
 open Core.Std
 open Bitstring
 
+let rewind ch n =
+  let open Int64 in
+  In_channel.seek ch (In_channel.pos ch - n)
+
 let sync_channel_in channel =
   let rec loop_channel channel =
     match In_channel.input_byte channel with
-    | Some 0x47 -> ()
+    | Some 0x47 -> rewind channel (Int64.of_int 1)
     | _ -> print_string "Skipping\n"; loop_channel channel in
   loop_channel channel
 
 let read_packet buffer ch =
   sync_channel_in ch;
-  match In_channel.really_input ch buffer 1 187 with
+  match In_channel.really_input ch buffer 0 188 with
   | Some () -> Some buffer
   | None -> None
 
 let line_stream_from_channel ch ~f =
   let buffer = String.create 188 in
-  buffer.[0] <- '\x47';
   let rec loop () =
     match read_packet buffer ch with
     | Some _ -> f buffer ; loop ()
