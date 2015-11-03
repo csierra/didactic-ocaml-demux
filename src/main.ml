@@ -1,38 +1,6 @@
 open Core.Std
 open Bitstring
 
-let rewind ch n =
-  let open Int64 in
-  In_channel.seek ch (In_channel.pos ch - n)
-
-module Packet = struct
-
-  type t = In_channel.t * String.t
-
-  let reader ch = (ch, String.create 188)
-
-  let sync (ch, buffer) =
-    let rec loop () =
-      match In_channel.input_byte ch with
-      | Some 0x47 -> rewind ch (Int64.of_int 1)
-      | _ -> print_string "Skipping\n"; loop () in
-    loop ()
-
-  let read ((ch, buffer) as reader) =
-    sync reader;
-    match In_channel.really_input ch buffer 0 188 with
-    | Some () -> Some buffer
-    | None -> None
-
-  let iter reader ~f =
-    let rec loop () =
-      match read reader with
-      | Some x -> f x ; loop ()
-      | None -> () in
-    loop ()
-
-end
-
 let print_table table =
   let module Char = Caml.Char in
     bitmatch table with
@@ -92,7 +60,7 @@ let print_packet = function
 
 let parse_packet packet =
   let module Char = Caml.Char in
-  let bits = Bitstring.bitstring_of_string packet in
+  let bits = Bitstring.bitstring_of_string (Packet.to_string packet) in
     bitmatch bits with
     | {
         (0x47)                                          : 8;
