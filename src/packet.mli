@@ -17,5 +17,20 @@ val read : reader -> t option
     [iter] on that reader will return not results. *)
 val iter : reader -> f: (t -> unit) -> unit
 
+type payload
+
+type metadata =
+    | PAT of payload
+    | EPG of payload
+    | NIT of payload
+    | SDT of payload
+
+type packet_type =
+    | Video of payload
+    | Audio of payload
+    | Metadata of metadata
+
 (** Parse and dump a packet into stdout *)
-val parse : t -> unit
+val parse : t -> packet_type
+
+val dump_pat : payload -> unit 

@@ -7,6 +7,19 @@ type reader = In_channel.t * String.t
 
 let reader ch = (ch, String.create 188)
 
+type payload = bitstring
+
+type metadata =
+    | PAT of payload
+    | EPG of payload
+    | NIT of payload
+    | SDT of payload
+
+type packet_type =
+    | Video of payload
+    | Audio of payload
+    | Metadata of metadata
+
 let rewind ch n =
   let open Int64 in
   In_channel.seek ch (In_channel.pos ch - n)
@@ -33,8 +46,8 @@ let iter reader ~f =
 
 let to_string p = p
 
-let print_table table =
-  let module Char = Caml.Char in
+let dump_pat table =
+    let module Char = Caml.Char in (* To be used after bitmatch expansion*)
     bitmatch table with
     | {
         table_id                 :                  8;
@@ -72,26 +85,26 @@ let print_table table =
 
           in consume_pat table_data
 
-let print_pat pat =
-  let module Char = Caml.Char in
+let parse_pat pat =
+  let module Char = Caml.Char in (* To be used after bitmatch expansion*)
     bitmatch pat with
     | {
         pointer_field :8;
         pointer_filler_bytes : pointer_field * 8;
         table : -1 : bitstring
-      } when pointer_field > 0 -> print_table table
+      } when pointer_field > 0 -> Metadata(PAT(table))
 
     | {
         pointer_field : 8;
         table : -1 : bitstring
-      } -> print_table table
+      } -> Metadata(PAT(table))
 
 let print_packet = function
-  | 0 -> print_pat
-  | _ -> fun _ -> ()
+  | 0 -> parse_pat
+  | _ -> fun payload -> Video(payload) 
 
 let parse packet =
-  let module Char = Caml.Char in
+  let module Char = Caml.Char in (* To be used after bitmatch expansion*)
   let bits = Bitstring.bitstring_of_string packet in
     bitmatch bits with
     | {
